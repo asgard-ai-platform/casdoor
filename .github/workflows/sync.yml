@@ -1,8 +1,8 @@
 name: Crowdin Action
 
-on:
-  push:
-    branches: [ master ]
+# on:
+#   push:
+#     branches: [ master ]
 
 jobs:
   synchronize-with-crowdin:
