@@ -39,6 +39,6 @@ jobs:
 
         run: |
           # Build a docker containers and push it to ECR
-          docker build --platform linux/amd64 -t ${ECR_REGISTRY}/${CASDOOR_ECR_REPOSITORY}:${IMAGE_TAG} .
+          docker build --platform linux/amd64 --target STANDARD -t ${ECR_REGISTRY}/${CASDOOR_ECR_REPOSITORY}:${IMAGE_TAG} .
           echo "Pushing image to ECR..."
           docker push ${ECR_REGISTRY}/${CASDOOR_ECR_REPOSITORY}:${IMAGE_TAG}
