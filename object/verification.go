@@ -15,7 +15,6 @@
 package object
 
 import (
-	"errors"
 	"fmt"
 	"math"
 	"math/rand"
@@ -61,22 +60,22 @@ type VerificationRecord struct {
 }
 
 func IsAllowSend(user *User, remoteAddr, recordType string) error {
-	var record VerificationRecord
-	record.RemoteAddr = remoteAddr
-	record.Type = recordType
-	if user != nil {
-		record.User = user.GetId()
-	}
+	// var record VerificationRecord
+	// record.RemoteAddr = remoteAddr
+	// record.Type = recordType
+	// if user != nil {
+	// 	record.User = user.GetId()
+	// }
 
-	has, err := ormer.Engine.Desc("created_time").Get(&record)
-	if err != nil {
-		return err
-	}
+	// has, err := ormer.Engine.Desc("created_time").Get(&record)
+	// if err != nil {
+	// 	return err
+	// }
 
-	now := time.Now().Unix()
-	if has && now-record.Time < 60 {
-		return errors.New("you can only send one code in 60s")
-	}
+	// now := time.Now().Unix()
+	// if has && now-record.Time < 60 {
+	// 	return errors.New("you can only send one code in 60s")
+	// }
 
 	return nil
 }
