@@ -8,15 +8,15 @@ on:
 
 jobs:
   synchronize-with-crowdin:
-    runs-on: ubuntu-latest
+    runs-on: action-runner-scale-set
     if: github.repository == 'casdoor/casdoor' && github.event_name == 'push'
     steps:
 
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v6
 
     - name: crowdin action
-      uses: crowdin/github-action@1.4.8
+      uses: crowdin/github-action@v2
       with:
         upload_translations: true
 
@@ -37,7 +37,7 @@ jobs:
         CROWDIN_PERSONAL_TOKEN: ${{ secrets.CROWDIN_PERSONAL_TOKEN }}
 
     - name: crowdin backend action
-      uses: crowdin/github-action@1.4.8
+      uses: crowdin/github-action@v2
       with:
         upload_translations: true
 
