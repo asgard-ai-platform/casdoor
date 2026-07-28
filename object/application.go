@@ -16,6 +16,7 @@ package object
 
 import (
 	"fmt"
+	"net/url"
 	"regexp"
 	"strings"
 
@@ -720,14 +721,78 @@ func (application *Application) GetId() string {
 	return fmt.Sprintf("%s/%s", application.Owner, application.Name)
 }
 
+// builtInRedirectUriPrefixes are the local development and native app callback targets that
+// every application accepts. They are matched as literal prefixes, never as regexes.
+var builtInRedirectUriPrefixes = []string{
+	"http://localhost:",
+	"https://localhost:",
+	"http://127.0.0.1:",
+	"http://casdoor-app",
+}
+
+// isSameOriginSubPath reports whether redirectUri has the same origin as allowedUri and
+// points at allowedUri's path or below it.
+func isSameOriginSubPath(allowedUri string, redirectUri string) bool {
+	allowed, err := url.Parse(allowedUri)
+	if err != nil {
+		return false
+	}
+
+	target, err := url.Parse(redirectUri)
+	if err != nil {
+		return false
+	}
+
+	if allowed.Scheme == "" || allowed.Host == "" || target.Scheme == "" || target.Host == "" {
+		return false
+	}
+
+	// Host carries the port but not the userinfo, so "https://allowed.com@evil.com/" is
+	// compared as evil.com and rejected.
+	if !strings.EqualFold(allowed.Scheme, target.Scheme) || !strings.EqualFold(allowed.Host, target.Host) {
+		return false
+	}
+
+	allowedPath := strings.TrimSuffix(allowed.EscapedPath(), "/")
+	if allowedPath == "" {
+		return true
+	}
+
+	targetPath := target.EscapedPath()
+	return targetPath == allowedPath || strings.HasPrefix(targetPath, allowedPath+"/")
+}
+
 func (application *Application) IsRedirectUriValid(redirectUri string) bool {
-	redirectUris := append([]string{"http://localhost:", "https://localhost:", "http://127.0.0.1:", "http://casdoor-app", ".chromiumapp.org"}, application.RedirectUris...)
-	for _, targetUri := range redirectUris {
-		targetUriRegex := regexp.MustCompile(targetUri)
-		if targetUriRegex.MatchString(redirectUri) || strings.Contains(redirectUri, targetUri) {
+	for _, prefix := range builtInRedirectUriPrefixes {
+		if strings.HasPrefix(redirectUri, prefix) {
 			return true
 		}
 	}
+
+	// Browser extension callbacks, e.g. https://<extension-id>.chromiumapp.org/
+	if target, err := url.Parse(redirectUri); err == nil && strings.HasSuffix(strings.ToLower(target.Hostname()), ".chromiumapp.org") {
+		return true
+	}
+
+	for _, allowedUri := range application.RedirectUris {
+		if redirectUri == allowedUri {
+			return true
+		}
+
+		if isSameOriginSubPath(allowedUri, redirectUri) {
+			return true
+		}
+
+		// Redirect URIs may be regular expressions, but they have to match the whole URI.
+		// An unanchored pattern also matches a substring, which lets
+		// "https://evil.example.com/?u=<allowed uri>" through and leaks the authorization
+		// code to an attacker-controlled origin. Compile instead of MustCompile so an
+		// allowed URI that is not a valid regex cannot panic the request.
+		if allowedUriRegex, err := regexp.Compile("^(?:" + allowedUri + ")$"); err == nil && allowedUriRegex.MatchString(redirectUri) {
+			return true
+		}
+	}
+
 	return false
 }
 

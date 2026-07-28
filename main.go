@@ -53,6 +53,7 @@ func main() {
 	beego.SetStaticPath("/swagger", "swagger")
 	beego.SetStaticPath("/files", "files")
 	// https://studygolang.com/articles/2303
+	beego.InsertFilter("*", beego.BeforeRouter, routers.HstsFilter)
 	beego.InsertFilter("*", beego.BeforeRouter, routers.StaticFilter)
 	beego.InsertFilter("*", beego.BeforeRouter, routers.AutoSigninFilter)
 	beego.InsertFilter("*", beego.BeforeRouter, routers.CorsFilter)
