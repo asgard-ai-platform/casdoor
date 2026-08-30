@@ -159,7 +159,7 @@ func (c *ApiController) SendVerificationCode() {
 			if captchaProvider := captcha.GetCaptchaProvider(vform.CaptchaType); captchaProvider == nil {
 				c.ResponseError(c.T("general:don't support captchaProvider: ") + vform.CaptchaType)
 				return
-			} else if isHuman, err := captchaProvider.VerifyCaptcha(vform.CaptchaToken, vform.ClientSecret); err != nil {
+			} else if isHuman, err := captchaProvider.VerifyCaptcha(vform.CaptchaToken, provider.ClientId, vform.ClientSecret); err != nil {
 				c.ResponseError(err.Error())
 				return
 			} else if !isHuman {
@@ -354,7 +354,7 @@ func (c *ApiController) VerifyCaptcha() {
 		return
 	}
 
-	isValid, err := provider.VerifyCaptcha(vform.CaptchaToken, vform.ClientSecret)
+	isValid, err := provider.VerifyCaptcha(vform.CaptchaToken, captchaProvider.ClientId, vform.ClientSecret)
 	if err != nil {
 		c.ResponseError(err.Error())
 		return

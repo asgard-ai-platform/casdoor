@@ -54,7 +54,7 @@ func contentEscape(str string) string {
 	return str
 }
 
-func (captcha *AliyunCaptchaProvider) VerifyCaptcha(token, clientSecret string) (bool, error) {
+func (captcha *AliyunCaptchaProvider) VerifyCaptcha(token, clientId, clientSecret string) (bool, error) {
 	pathData, err := url.ParseQuery(token)
 	if err != nil {
 		return false, err
