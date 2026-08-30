@@ -31,6 +31,9 @@ type VerificationForm struct {
 	CaptchaType  string `form:"captchaType"`
 	ClientSecret string `form:"clientSecret"`
 	CaptchaToken string `form:"captchaToken"`
+	// Which of the application's captcha providers to verify against. Empty
+	// keeps the historical behaviour of taking the first one bound.
+	CaptchaProviderName string `form:"captchaProviderName"`
 }
 
 const (

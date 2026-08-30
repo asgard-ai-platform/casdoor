@@ -339,6 +339,44 @@ func GetCaptchaProviderByOwnerName(applicationId, lang string) (*Provider, error
 	return &provider, nil
 }
 
+// GetCaptchaProviderByApplicationAndName returns the captcha provider bound to
+// the application under the given name.
+//
+// GetCaptchaProviderByApplication returns whichever captcha provider happens to
+// come first in the application's provider array, which is fine while an
+// application has one. It stops being fine once the same application serves
+// clients that must be verified against different keys — a reCAPTCHA key issued
+// for an iOS or Android application only verifies tokens minted by that
+// application — because the array's order is not something the caller controls.
+//
+// The search deliberately runs over the application's own bindings rather than
+// the provider table at large. A name arriving from a request must not be able
+// to reach a provider the application was never given, which would otherwise let
+// a caller name the weakest captcha in the deployment and be verified against
+// that instead.
+func GetCaptchaProviderByApplicationAndName(applicationId, providerName, lang string) (*Provider, error) {
+	application, err := GetApplication(applicationId)
+	if err != nil {
+		return nil, err
+	}
+
+	if application == nil || len(application.Providers) == 0 {
+		return nil, fmt.Errorf(i18n.Translate(lang, "provider:Invalid application id"))
+	}
+
+	for _, providerItem := range application.Providers {
+		if providerItem.Provider == nil {
+			continue
+		}
+		if providerItem.Provider.Category != "Captcha" || providerItem.Provider.Name != providerName {
+			continue
+		}
+		return GetCaptchaProviderByOwnerName(util.GetId(providerItem.Provider.Owner, providerItem.Provider.Name), lang)
+	}
+
+	return nil, fmt.Errorf(i18n.Translate(lang, "provider:the provider: %s does not exist"), providerName)
+}
+
 func GetCaptchaProviderByApplication(applicationId, isCurrentProvider, lang string) (*Provider, error) {
 	if isCurrentProvider == "true" {
 		return GetCaptchaProviderByOwnerName(applicationId, lang)

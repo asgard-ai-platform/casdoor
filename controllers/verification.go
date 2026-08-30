@@ -139,7 +139,12 @@ func (c *ApiController) SendVerificationCode() {
 		return
 	}
 
-	provider, err := object.GetCaptchaProviderByApplication(vform.ApplicationId, "false", c.GetAcceptLanguage())
+	var provider *object.Provider
+	if vform.CaptchaProviderName != "" {
+		provider, err = object.GetCaptchaProviderByApplicationAndName(vform.ApplicationId, vform.CaptchaProviderName, c.GetAcceptLanguage())
+	} else {
+		provider, err = object.GetCaptchaProviderByApplication(vform.ApplicationId, "false", c.GetAcceptLanguage())
+	}
 	if err != nil {
 		c.ResponseError(err.Error())
 		return
