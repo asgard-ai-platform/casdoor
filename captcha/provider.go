@@ -17,7 +17,7 @@ package captcha
 import "fmt"
 
 type CaptchaProvider interface {
-	VerifyCaptcha(token, clientSecret string) (bool, error)
+	VerifyCaptcha(token, clientId, clientSecret string) (bool, error)
 }
 
 func GetCaptchaProvider(captchaType string) CaptchaProvider {
@@ -30,6 +30,8 @@ func GetCaptchaProvider(captchaType string) CaptchaProvider {
 		return NewReCaptchaProvider()
 	case "reCAPTCHA v3":
 		return NewReCaptchaProvider()
+	case "reCAPTCHA Enterprise":
+		return NewReCaptchaEnterpriseProvider()
 	case "Aliyun Captcha":
 		return NewAliyunCaptchaProvider()
 	case "hCaptcha":
@@ -43,11 +45,11 @@ func GetCaptchaProvider(captchaType string) CaptchaProvider {
 	return nil
 }
 
-func VerifyCaptchaByCaptchaType(captchaType, token, clientSecret string) (bool, error) {
+func VerifyCaptchaByCaptchaType(captchaType, token, clientId, clientSecret string) (bool, error) {
 	provider := GetCaptchaProvider(captchaType)
 	if provider == nil {
 		return false, fmt.Errorf("invalid captcha provider: %s", captchaType)
 	}
 
-	return provider.VerifyCaptcha(token, clientSecret)
+	return provider.VerifyCaptcha(token, clientId, clientSecret)
 }
