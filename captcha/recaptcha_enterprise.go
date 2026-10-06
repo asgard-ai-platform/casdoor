@@ -21,6 +21,8 @@ import (
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/beego/beego/logs"
 )
 
 const ReCaptchaEnterpriseVerifyUrl = "https://recaptchaenterprise.googleapis.com/v1/projects/%s/assessments?key=%s"
@@ -85,13 +87,18 @@ func (captcha *ReCaptchaEnterpriseProvider) VerifyCaptcha(token, clientId, clien
 	// token can be well-formed yet rejected (wrong site key, already redeemed,
 	// expired), which shows up as valid=false rather than an HTTP error.
 	type assessmentResponse struct {
+		Name            string `json:"name"`
 		TokenProperties struct {
-			Valid         bool   `json:"valid"`
-			InvalidReason string `json:"invalidReason"`
-			Action        string `json:"action"`
+			Valid              bool   `json:"valid"`
+			InvalidReason      string `json:"invalidReason"`
+			Action             string `json:"action"`
+			Hostname           string `json:"hostname"`
+			AndroidPackageName string `json:"androidPackageName"`
+			IosBundleId        string `json:"iosBundleId"`
 		} `json:"tokenProperties"`
 		RiskAnalysis struct {
-			Score float64 `json:"score"`
+			Score   float64  `json:"score"`
+			Reasons []string `json:"reasons"`
 		} `json:"riskAnalysis"`
 		Error struct {
 			Message string `json:"message"`
@@ -110,6 +117,14 @@ func (captcha *ReCaptchaEnterpriseProvider) VerifyCaptcha(token, clientId, clien
 		}
 		return false, fmt.Errorf("reCAPTCHA Enterprise returned %d: %s", resp.StatusCode, msg)
 	}
+
+	// Log every verdict. A low score reaches the caller only as "Turing test
+	// failed.", with neither the score nor Google's reasons for it, and the
+	// token is single-use, so the assessment cannot be fetched again afterwards.
+	// The token itself is not logged.
+	tp, ra := assessment.TokenProperties, assessment.RiskAnalysis
+	logs.Info("reCAPTCHA Enterprise assessment: siteKey=%s valid=%t invalidReason=%q score=%v reasons=%v action=%q androidPackageName=%q iosBundleId=%q hostname=%q assessment=%s",
+		clientId, tp.Valid, tp.InvalidReason, ra.Score, ra.Reasons, tp.Action, tp.AndroidPackageName, tp.IosBundleId, tp.Hostname, assessment.Name)
 
 	if !assessment.TokenProperties.Valid {
 		reason := assessment.TokenProperties.InvalidReason
